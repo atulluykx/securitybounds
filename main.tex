@@ -1,0 +1,122 @@
+\documentclass{article}
+\usepackage[english]{babel}
+%\usepackage{fullpage}
+\usepackage{amsfonts, amssymb, amsmath}
+\usepackage{color}
+\usepackage{suffix}
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+
+%%%% Notation
+%% Probability notation
+\newcommand{\p}{\mathbf{P}}
+
+\renewcommand{\Pr}[2][]{\p_{#1}\left[#2\right]} % Pr()
+\WithSuffix\newcommand\Pr*[1]{\p\left[\vphantom{\hat{X}}#1\right]}
+
+\newcommand{\pr}[2][]{\p_{#1}\,#2} % Pr
+\WithSuffix\newcommand\pr*[1]{\mathbf{P}\left[\vphantom{\hat{X}}#1\right]} % Pr[]
+
+\newcommand{\Dstr}[2][]{\mu_{#1}\left(#2\right)}
+\newcommand{\dstr}[2][]{\mu_{#1}#2}
+
+%% Miscellaneous
+\newcommand{\size}[1]{\left\lvert #1\right\rvert} % | |
+\WithSuffix\newcommand\size*[1]{\left\lvert\vphantom{X^Y_Z}#1\right\rvert}
+
+\newcommand\set[1]{\left\{#1\right\}}
+\WithSuffix\newcommand\set*[1]{\left\{\vphantom{X^Y_Z}#1\right\}}
+
+\newcommand\braces[1]{\left[#1\right]}
+\WithSuffix\newcommand\braces*[1]{\left[\vphantom{\overline{X^Y_Z}}#1\right]}
+
+\newcommand{\abs}[1]{\left\lvert #1\right\rvert} % | |
+\newcommand{\norm}[1]{\left\lVert #1\right\rVert} % || ||
+\newcommand{\defeq}{:=}
+
+\newcommand\suchthat{\mid}
+\WithSuffix\newcommand\suchthat*{\mathrel{}\middle|\mathrel{}}
+
+\DeclareMathOperator*{\adv}{adv}
+\DeclareMathOperator*{\difference}{\Delta}
+
+\newcommand\dist[3][]{\difference_{#1}\left(#2\,;\,#3\right)}
+\WithSuffix\newcommand\dist*[3][]{\difference_{#1}\left(\vphantom{X^Y_Z}#2\,;\,#3\right)}
+
+%%%% Editorial Commands
+\newcommand{\todo}[1]{\textcolor{red}{TODO~#1}}
+
+\usepackage{hyperref}
+\usepackage{subfig}
+\usepackage{algorithm}
+\usepackage{algpseudocode}
+\usepackage{booktabs}
+
+
+\title{GCM Security Bounds}
+\author{Atul Luykx}
+
+\begin{document}
+\maketitle
+\section{GCM use in TLS}
+
+\begin{table}[H]
+  \centering
+  \caption{Lower bounds on the maximum amount of data that can be processed under one key, given a certain attack success probability threshold, and assuming at most $2^{60}$ verification attempts were made. The numbers do not change significantly if the number of verification attempts is lowered. Equation \ref{sigmabound} was used for the calculations. Note that the calculations were made assuming that the underlying block cipher is AES. They change significantly if a block cipher is used with smaller block size.}
+  \begin{tabular}{cc}
+    \toprule
+    Attack Success Probability  & Max data\\
+    \cmidrule{1-2}
+    $2^{-30}$ & 6 petabytes\\
+    $2^{-20}$ & 200 petabytes \\
+    $2^{-10}$ & 6400 petabytes\\
+    \bottomrule
+  \end{tabular}
+\end{table}
+
+\section{Computations}
+\begin{table}[H]
+  \centering
+  \caption{Notation}
+  \begin{tabular}{ll}
+    \toprule
+    Parameter & Description\\
+    \cmidrule{1-2}
+    $n$ & Block size\\
+    $\tau$ & Tag size\\
+    $\ell$ & maximum input length in blocks\\
+    $\sigma$ & total plaintext length in blocks\\
+    $q$ & number of encryption queries\\
+    $v$ & number of verification attempts\\
+    \bottomrule
+  \end{tabular}
+\end{table}
+Combining Corollary 3 and equation 22 from Iwata et al.'s paper~\cite{GCMLNCS,cryptoeprint:2012:438}, we get the following AE security bound for GCM with nonce length 96 bits:
+\begin{equation}
+  \frac{0.5(\sigma+q+1)^2}{2^{n}} + \frac{v(\ell+1)}{2^{\tau}}\cdot\delta_n(\sigma+q+v+1)\,,
+\end{equation}
+where
+\begin{equation}
+  \delta_n(a) = \frac{1}{\left(1 - \frac{a-1}{2^n}\right)^{a/2}}\,.
+\end{equation}
+
+For GCM used in TLS, the nonce length is 96 bits, and $n$ and $\tau$ are 128 bits. Since the record size is $2^{14}$ bytes, $\ell$ has a value of $2^{10}$.
+
+Assume that $\sigma+q+v+1\le 2^{64}$, then as pointed out by Iwata et al.\ , $\delta_n(\sigma+q+v+1) \le 2$, and we get
+\begin{equation}
+  \frac{(\sigma+q+1)^2}{2^{129}} + v\cdot\frac{2^{11}+2}{2^{128}}\,.
+\end{equation}
+
+If we want to bound adversarial advantage by $\epsilon$, we get
+\begin{equation}
+  \sigma+q\le \left(2^{129}\cdot\epsilon - v(2^{12}+4)\right)^{1/2}-1\,,
+\end{equation}
+and since $q\le\sigma$, we get
+\begin{equation}\label{sigmabound}
+  \sigma\le 0.5\cdot\left(2^{129}\cdot\epsilon - v(2^{12}+4)\right)^{1/2}-0.5\,.
+\end{equation}
+
+\bibliographystyle{plain}
+\bibliography{main.bib}
+
+\end{document}
