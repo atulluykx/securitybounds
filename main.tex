@@ -53,68 +53,104 @@
 \usepackage{booktabs}
 
 
-\title{GCM Security Bounds}
+\title{Limits on Authenticated Encryption Use in TLS}
 \author{Atul Luykx, Kenny Paterson}
 
 \begin{document}
 \maketitle
-\section{GCM use in TLS}
+
+
+% Confidence level set to $2^{-60}$
+% There are likely to be over $2^{40}$ tls connections globally?
+% What to set the confidence level to? 
+
+\section{Summary}
+Chacha20+poly1305 does not impose any limits on the amount of data that can be processed under one key, assuming nonces are used properly and the block function underlying Chacha20 is secure as a pseudorandom function.
+
+The limits on the amount of data that AES-GCM can process per key can be found in Table~\ref{table:gcm-bounds}, which again assumes that nonces are used properly and that AES is secure as a pseudorandom permutation. Section~\ref{sec:explanation} provides an explanation as to what the bounds mean and why there is a difference between Chacha20+poly1305 and AES-GCM.
 
 \begin{table}[H]
   \centering
-  \caption{Lower bounds on the maximum amount of data that can be processed under one key, given a certain attack success probability threshold, and assuming at most $2^{60}$ verification attempts were made. The numbers do not change significantly if the number of verification attempts is lowered. Equation \ref{sigmabound} was used for the calculations. Note that the calculations were made assuming that the underlying block cipher is AES. They change significantly if a block cipher is used with smaller block size.}
-  \begin{tabular}{cc}
+  \caption{Lower bounds on the maximum amount of data that can be processed under one key for AES-GCM, given a certain confidentiality attack success probability. Integrity will not be breached with probability greater than $1/2^{57}$ assuming the data limits are respected, and at most $2^{60}$ verification attempts were made. Equation \ref{eq:querybound} was used to calculate the maximum number of records that can be processed, and the maximum amount of data was deduced by assuming all records were of maximal length.}\label{table:gcm-bounds}
+  \begin{tabular}{ccl}
     \toprule
-    Attack Success Probability  & Max data\\
-    \cmidrule{1-2}
-    $2^{-30}$ & 6 petabytes\\
-    $2^{-20}$ & 200 petabytes \\
-    $2^{-10}$ & 6400 petabytes\\
+    Attack Success Probability  & Max Records & Max Data (terabytes)\\
+    \cmidrule{1-3}
+    $2^{-60}$ & $2^{24.5}$ & 0.3887\\
+    $2^{-50}$ & $2^{29.5}$ & 12.44 \\
+    $2^{-40}$ & $2^{34.5}$ & 398.1\\
+    $2^{-30}$ & $2^{39.5}$ & 12,738\\
+    $2^{-20}$ & $2^{44.5}$ & 407,619\\
+    $2^{-10}$ & $2^{49.5}$ & 1.304 $\times 10^7$\\
     \bottomrule
   \end{tabular}
 \end{table}
 
+\section{Explanation}\label{sec:explanation}
+Efficient symmetric-key cryptographic algorithms can roughly be divided into two groups: primitives, and modes of operation. Primitives, such as block ciphers or pseudorandom functions, are simple, and attempt to approximate ideal mathematical objects, such as random permutations or functions. Examples of primitives used in the TLS record layer are AES and the block function underlying Chacha20. 
+
+Primitives on their own do not provide any security. They must be used in modes of operation, which in turn enable secure communication. For example, GCM is a mode of operation for block ciphers, and Chacha20+poly1305 can be viewed as a mode of operation for pseudorandom functions, both of which enable authenticated encryption, which the primitives on their own do not.
+
+The quality of the primitives is determined through trial and error, and confidence in how well they approximate the ideal mathematical object only increases as a function of the amount the primitives have been studied. In contrast with primitives, modes of operation generally do not rely on maturity to create confidence in the security they provide, rather, one can formally \emph{reduce} the security of modes of operation to that of the underlying primitive. This means any attack against the mode can be converted into an efficient attack against the primitive, and so any confidence in the primitive can be translated to confidence in the mode.
+
+For well-designed primitives the best attacks do not improve significantly when adversaries have access to more plaintext-ciphertext pairs: it matters little if you have twenty or $2^{20}$ plaintext-ciphertext pairs, you will not improve your attack against AES. However, modes of operation \emph{could} start leaking security with extended use, or in other words, the reduction from modes to primitives might not be perfect.
+
+If we look at Chacha20+poly1305 for example, then the security proof establishes a \emph{tight} reduction from the mode to the underlying primitive. This means there is no loss of confidence when going from mode to primitive. Similarly, if one were to use Chacha20's primitive in GCM, then GCM would have a tight reduction as well. But using AES in Chacha20+poly1305 or GCM results in a non-tight reduction, hence the more one uses the modes, the further the security of the mode drifts from the security of AES. This problem is inherent to all block ciphers. As a result, there are limits on how much data one can process using AES-GCM at which point one can no longer say that confidence in AES transfers to confidence in AES-GCM.
+
+One could wonder what the harm is in pushing the use of AES-GCM beyond the limits imposed by the reduction. It probably is the case that in many situations one would not have any feasible attacks against AES-GCM when the reductions break down. Yet allowing worldwide use of AES-GCM beyond what is known to be secure is an incredibly large risk not worth taking, without proper attention from the research community into the exact nature of the risks.
+
 \section{Computations}
+The analysis by Procter~\cite{cryptoeprint:2014:613} makes clear that the reduction for Chacha20+poly1305 is tight for confidentiality, and sufficiently tight for integrity for all practical purposes.
+
+For AES-GCM use the bounds calculated by Iwata et al.~\cite{GCMLNCS,cryptoeprint:2012:438}, which corrects the original proof by McGrew and Viega~\cite{DBLP:conf/indocrypt/McGrewV04,DBLP:journals/iacr/McGrewV04}. Note that the security bound improvement proposed by Niwa et al.~\cite{DBLP:conf/fse/NiwaOMI15,DBLP:journals/iacr/NiwaOMI15} does not apply to the way AES-GCM is used in TLS, since it only holds for GCM used with nonce-length not equal to 96 bits. Throughout this section we only consider GCM with nonce-length 96 bits.
+
 \begin{table}[H]
   \centering
-  \caption{Notation}
+  \caption{Notation}\label{table:notation}
   \begin{tabular}{ll}
     \toprule
     Parameter & Description\\
     \cmidrule{1-2}
-    $n$ & Block size\\
-    $\tau$ & Tag size\\
-    $\ell$ & maximum input length in blocks\\
+    $n$ & Block size, 128 bits\\
+    $\tau$ & Tag size, 128 bits\\
+    $\ell$ & maximum input length in blocks, $2^{10}$ blocks $ = 2^{14}$ Bytes\\
     $\sigma$ & total plaintext length in blocks\\
     $q$ & number of encryption queries\\
     $v$ & number of verification attempts\\
     \bottomrule
   \end{tabular}
 \end{table}
-Combining Corollary 3 and equation 22 from Iwata et al.'s paper~\cite{GCMLNCS,cryptoeprint:2012:438}, we get the following AE security bound for GCM with nonce length 96 bits:
+
+Starting with integrity, the best bound for GCM can be found in equation 22 from Iwata et al.'s extended paper~\cite{cryptoeprint:2012:438}:
 \begin{equation}
-  \frac{0.5(\sigma+q+1)^2}{2^{n}} + \frac{v(\ell+1)}{2^{\tau}}\cdot\delta_n(\sigma+q+v+1)\,,
+  \frac{v(\ell+1)}{2^\tau}\cdot\delta_n(\sigma+q+v+1)\,,
 \end{equation}
-where
+with the notation explained in Table~\ref{table:notation}, and
 \begin{equation}
-  \delta_n(a) = \frac{1}{\left(1 - \frac{a-1}{2^n}\right)^{a/2}}\,.
+  \delta_n(x) \defeq \frac{1}{\left(1 - \frac{x-1}{2^n}\right)^{x/2}}\,.
+\end{equation}
+Assuming that $\sigma+q+v+1\le 2^{64}$, then as pointed out by Iwata et al.\ , $\delta_n(\sigma+q+v+1) \le 2$, and we get an upper bound of
+\begin{equation}
+  2\frac{v(\ell+1)}{2^\tau}\,.
+\end{equation}
+So if $\sigma$, $q$, and $v$ are not greater than $2^{60}$, we have that the success probability of any attacker in breaking the integrity of GCM is at most
+\begin{equation}
+  2\frac{2^{60}(2^{10}+1)}{2^{128}} = \frac{1}{2^{57}} + \frac{1}{2^{67}}\,.
 \end{equation}
 
-For GCM used in TLS, the nonce length is 96 bits, and $n$ and $\tau$ are 128 bits. Since the record size is $2^{14}$ bytes, $\ell$ has a value of $2^{10}$.
-
-Assume that $\sigma+q+v+1\le 2^{64}$, then as pointed out by Iwata et al.\ , $\delta_n(\sigma+q+v+1) \le 2$, and we get
+Corollay 3 from Iwata et al.'s papers establishes the following confidentiality bound for GCM:
 \begin{equation}
-  \frac{(\sigma+q+1)^2}{2^{129}} + v\cdot\frac{2^{11}+2}{2^{128}}\,.
+  \frac{(\sigma+q+1)^2}{2^{n+1}}\,.
 \end{equation}
-
-If we want to bound adversarial advantage by $\epsilon$, we get
+Since $\sigma\le q\ell$, we get
 \begin{equation}
-  \sigma+q\le \left(2^{129}\cdot\epsilon - v(2^{12}+4)\right)^{1/2}-1\,,
+  \frac{(\sigma+q+1)^2}{2^{n+1}} \le \frac{(q(\ell+1)+1)^2}{2^{n+1}}\,,
 \end{equation}
-and since $q\le\sigma$, we get
-\begin{equation}\label{sigmabound}
-  \sigma\le 0.5\cdot\left(2^{129}\cdot\epsilon - v(2^{12}+4)\right)^{1/2}-0.5\,.
+hence if we want to bound attack success probability by $\epsilon$, we get
+\begin{equation}\label{eq:querybound}
+  \frac{(q(\ell+1)+1)^2}{2^{n+1}} \le \epsilon\,\quad\text{ or }\quad q \le \frac{\sqrt{2^{n+1}\epsilon}-1}{\ell+1}\,.
 \end{equation}
+Plugging in the numbers, we get our desired bounds.
 
 \bibliographystyle{plain}
 \bibliography{main.bib}
