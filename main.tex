@@ -113,9 +113,9 @@ However, the same is not true for \texttt{AES-GCM} because of particular charact
 %One could wonder what the harm is in pushing the use of AES-GCM beyond the limits imposed by the reduction. It probably is the case that in many situations one would not have any feasible attacks against AES-GCM when the reductions break down. Yet allowing worldwide use of AES-GCM beyond what is known to be secure is an incredibly large risk not worth taking, without proper attention from the research community into the exact nature of the risks.
 
 \subsection{Analytic Approach}
-In our analysis, to simplify matters, we will assume that AES is a random permutation for each key and that the PRF underlying \texttt{ChaCha20+Poly1305} is a random function for each key. This means that neither primitive can be distinguished from its ``ideal'' version. Of course, these simplifications are not actually true: AES is manifestly \emph{not} a random permutation for each key! 
+In our analysis, to simplify matters, we will assume that AES with a random key is a random permutation and that the PRF underlying \texttt{ChaCha20+Poly1305} with a random key is a random function. This means that neither primitive can be distinguished from its ``ideal'' version, when keyed with a uniformly random value. %Of course, these simplifications are not actually true: AES is manifestly \emph{not} a random permutation for each key! 
 
-However, making this assumption enables us to focus on the quality of the reductions from the modes to the underlying primitives without becoming entangled in too many details. In particular, making this assumption rules out attacks based on key recovery for the underlying primitives, and removes the dependence of success probabilities on running times of adversaries. This allows us to examine the relationship between attack success probability and the amount of encrypted records available to the adversary.
+Making this assumption enables us to focus on the quality of the reductions from the modes to the underlying primitives without becoming entangled in too many details. In particular, the assumption rules out attacks based on key recovery for the underlying primitives, and removes the dependence of success probabilities on running times of adversaries. This allows us to examine the relationship between attack success probability and the amount of encrypted records available to the adversary.
 
 This assumption can be relaxed at the cost of a more involved analysis. This analysis would introduce additional parameters relating to the distinguishing advantage of adversaries against the underlying primitives and their running times. 
 
@@ -123,7 +123,7 @@ This assumption can be relaxed at the cost of a more involved analysis. This ana
 
 Here we are concerned with the security of \texttt{ChaCha20+Poly1305} and  \texttt{AES-GCM} in the Authenticated Encryption (AE) sense. This is a strong and very conservative notion of security that covers a broad range of attacks that we wish to protect against in TLS. The AE security notion can be subdivided into two other notions: IND-CPA security and INT-CTXT security; their combination is equivalent to AE security.
 
-The first, IND-CPA security, is a confidentiality notion, which measures how well an adversary can distinguish encryptions of different messages of the same lengths. 
+The first, IND-CPA security, is a confidentiality notion, which measures how well an adversary can distinguish encryptions of different messages of the same lengths. In particular, IND-CPA captures the intuition that whatever properties adversaries can determine about the messages given the ciphertext, they could have determined without the ciphertext.
 
 The second, INT-CTXT, is an integrity notion which measures the success of an adversary in creating fresh ciphertexts which are accepted as genuine upon decryption. In this notion, we measure the adversary's success in terms of the number of verification queries (trial decryptions) it is permitted to make, denoted $v$. 
 
@@ -131,7 +131,7 @@ Note that in TLS, we can in fact set $v=1$, since a failed verification query le
 
 \section{Computing the Bounds}
 
-The analysis by Procter~\cite{cryptoeprint:2014:613} gives a security reduction for \texttt{ChaCha20+Poly1305} that is tight for confidentiality, and sufficiently tight for integrity for all practical purposes. More specifically, the confidentiality of the construction is tightly related to that of the underlying PRF, while integrity degrades as $v \cdot 2^{-93}$ where $v$ is the number of verification queries permitted (under the assumption that all messages have the maximum permitted length).
+The analysis by Procter~\cite{cryptoeprint:2014:613} gives a security reduction for \texttt{ChaCha20+Poly1305} that is tight for confidentiality, and sufficiently tight for integrity for all practical purposes. More specifically, the confidentiality of the construction is tightly related to that of the underlying PRF, while integrity degrades as $v \cdot 2^{-93}$ where $v$ is the number of verification queries permitted, assuming all messages have the maximum permitted length.
 
 {\bf Does this mean that with $2^{60}$ queries, we get a success rate of as much as $2^{-33}$? This seems worse than what we get for AES-GCM!}
 
