@@ -65,7 +65,7 @@
 % What to set the confidence level to? 
 
 \section{Summary}
-\texttt{ChaCha20+Poly1305}'s security degrades proportional to the number of forgery attempts, assuming nonces are used properly and the block function underlying ChaCha20 is secure as a pseudorandom function. If only a single forgery attempt is allowed, as is the case for TLS, then the 64-bit TLS sequence number will wrap before any significant security loss is incurred. If multiple forgery attempts are allowed, as is the case for DTLS, then adversaries will have success probability $v\cdot 2^{-93}$, with $v$ the number of attempts. For example, adversaries making $v = 2^{60}$ forgery attempts will succeed with probability at most $2^{-33}$ in constructing a forgery.
+The AE security of \texttt{ChaCha20+Poly1305} degrades proportionally with the number of forgery attempts, assuming nonces are used properly and the block function underlying ChaCha20 is secure as a pseudorandom function. If only a single forgery attempt is allowed, as is the case for TLS, then the 64-bit TLS sequence number will wrap before any significant security loss is incurred. If multiple forgery attempts are allowed, as is the case for DTLS, then adversaries will have AE success probability bounded by $v\cdot 2^{-93}$, with $v$ being the number of forgery attempts. For example, adversaries making $v = 2^{60}$ forgery attempts will succeed with probability at most $2^{-33}$.
 
 
 Limits on the amount of data that \texttt{AES-GCM} can process without needing a key change can be found in Table~\ref{table:gcm-bounds}. Here we  assume that AES is secure as a pseudorandom permutation and that nonces are used properly; in particular, we assume that the 8 octet \verb|nonce_explicit| part of the \texttt{AES-GCM} nonce is unique for each encryption (for example, it is set to be the TLS sequence number). 
@@ -90,9 +90,9 @@ Limits on the amount of data that \texttt{AES-GCM} can process without needing a
 \end{table}
 \medskip
 
-In this table, the attack that is considered is one in which an adversary attempts to distinguish which one of two equal length messages was encrypted by \texttt{AES-GCM}; for the quoted figures, integrity will not be breached with probability greater than $1/2^{57}$. Further rationale for considering this type of attack is provided in Section~\ref{sec:explanation}. That section also provides an explanation as to what the bounds mean and why there is a difference between \texttt{ChaCha20+Poly1305} and \texttt{AES-GCM}.
+In this table, the attack that is considered is one in which an adversary attempts to distinguish which one of two equal length messages was encrypted by \texttt{AES-GCM} (an IND-CPA attack); for the quoted figures, ciphertext integrity will not be breached with probability greater than $1/2^{57}$. Bounds on AE security can then be derived by adding  $1/2^{57}$ to the bounds from Table \ref{table:gcm-bounds}. Further rationale for considering this type of attack is provided in Section~\ref{sec:explanation}. That section also provides an explanation as to what the bounds mean and why there is a difference between \texttt{ChaCha20+Poly1305} and \texttt{AES-GCM}.
 
-The computations performed in this text focus on security degradation under a \emph{single} key. However, security also degrades proportional to the number of keys used, as described by Bernstein~\cite{bernsteinblog} and Chatterjee, Menezes, and Sarkar~\cite{DBLP:conf/sacrypt/ChatterjeeMS11,DBLP:journals/iacr/ChatterjeeMS11}. Concretely, if $k$ keys are used, then attacker success probability increases by a factor $k$. Therefore, all success probabilities in this text should be multiplied by $k$, where $k$ is the number of keys used in all TLS connections under consideration. Furthermore, generally it is better to stick to using a particular key as long as possible, within reason, rather than to switch keys as frequently as possible.
+The computations performed in this text focus on security degradation under a \emph{single} key. However, security also degrades proportional to the number of keys used, as described by Bernstein~\cite{bernsteinblog} and Chatterjee, Menezes, and Sarkar~\cite{DBLP:conf/sacrypt/ChatterjeeMS11,DBLP:journals/iacr/ChatterjeeMS11}. Concretely, if $k$ keys are used, then attacker success probability increases by a factor $k$. Therefore, all success probabilities in this text should be multiplied by $k$, where $k$ is the number of keys used in all TLS connections that may be of interest to the adversary. %Furthermore, generally it is better to stick to using a particular key as long as possible, within reason, rather than to switch keys as frequently as possible.
 
 \section{Explanation}\label{sec:explanation}
 
@@ -123,13 +123,15 @@ This assumption can be relaxed at the cost of a more involved analysis. This ana
 
 \subsection{Security Notions}
 
-Here we are concerned with the security of \texttt{ChaCha20+Poly1305} and  \texttt{AES-GCM} in the Authenticated Encryption (AE) sense. This is a strong and very conservative notion of security that covers a broad range of attacks that we wish to protect against in TLS. The AE security notion can be subdivided into two other notions: IND-CPA security and INT-CTXT security; their combination is equivalent to AE security.
+Here we are concerned with the security of \texttt{ChaCha20+Poly1305} and  \texttt{AES-GCM} in the Authenticated Encryption (AE) sense. This is a strong and very conservative notion of security that covers a broad range of attacks that we wish to protect against in TLS. The AE security notion can be subdivided into two other notions: IND-CPA security and INT-CTXT security; their combination is equivalent to AE security. 
 
 The first, IND-CPA security, is a confidentiality notion, which measures how well an adversary can distinguish encryptions of different messages of the same lengths. In particular, IND-CPA captures the intuition that whatever properties adversaries can determine about the messages given the ciphertext, they could have determined without the ciphertext.
 
 The second, INT-CTXT, is an integrity notion which measures the success of an adversary in creating fresh ciphertexts which are accepted as genuine upon decryption. In this notion, we measure the adversary's success in terms of the number of verification queries (trial decryptions) it is permitted to make, denoted $v$. 
 
 Note that in TLS, we can in fact set $v=1$, since a failed verification query leads to the termination of the TLS connection and the disposal of the connection keys. However the same is not true in DTLS, and many verification attempts would be tolerated in a typical attack scenario. 
+
+Bounds on success probability for IND-CPA security and for INT-CTXT security (for a given $v$) can be \emph{added} to produce bounds on AE security (for a given $v$). 
 
 \section{Computing the Bounds}
 
