@@ -74,7 +74,7 @@ Limits on the amount of data that \texttt{AES-GCM} can process without needing a
 \medskip
 \begin{table}[H]
   \centering
-  \caption{Lower bounds on the maximum amount of data that can be processed under one key for \texttt{AES-GCM}, given a certain success probability for a confidentiality attack. Integrity will not be breached with probability greater than $1/2^{57}$ assuming the data limits are respected, and at most $2^{60}$ verification attempts are made. Equation (\ref{eq:querybound}) was used to calculate the maximum number of records that can be processed, and the maximum amount of data was computed under the assumption that all records are of maximal length.}\label{table:gcm-bounds}
+  \caption{Lower bounds on the maximum amount of data that can be processed under one key for \texttt{AES-GCM}, given a certain success probability for a confidentiality attack. Integrity will not be breached with probability greater than $1/2^{57}$ assuming the data limits are respected, and at most $2^{60}$ verification attempts are made. Equation (\ref{eq:querybound}) was used to calculate the maximum number of records that can be processed, and the maximum amount of data was computed under the assumption that all records are of length $2^{14}$ Bytes.}\label{table:gcm-bounds}
   \begin{tabular}{ccl}
     \toprule
     Attack Success Probability  & Max Records & Max Data (terabytes)\\
@@ -90,7 +90,7 @@ Limits on the amount of data that \texttt{AES-GCM} can process without needing a
 \end{table}
 \medskip
 
-In this table, the attack considered is one in which adversaries attempt to determine which one of two equal length messages was encrypted by \texttt{AES-GCM} (an IND-CPA attack); for the quoted figures, ciphertext integrity will not be breached with probability greater than $1/2^{57}$. Bounds on AE security can then be derived by adding  $1/2^{57}$ to the bounds from Table \ref{table:gcm-bounds}. Section~\ref{sec:explanation} provides further rationale for considering these types of attack, and also explains what the bounds mean and why there is a difference between \texttt{ChaCha20+Poly1305} and \texttt{AES-GCM}.
+In this table, the attack considered is one in which adversaries attempt to determine which one of two equal length messages was encrypted by \texttt{AES-GCM} (an IND-CPA attack); for the quoted figures, ciphertext integrity will not be breached with probability greater than $1/2^{57}$. Bounds on AE security can then be derived by adding  $1/2^{57}$ to the bounds from Table \ref{table:gcm-bounds}. Section~\ref{sec:explanation} provides further rationale for considering these types of attack, and also explains what the bounds mean, why there is a difference between \texttt{ChaCha20+Poly1305} and \texttt{AES-GCM}, and gives an overview of known vulnerabilities when the limits and assumptions are not respected.
 
 The computations in this text focus on security degradation under a \emph{single} key. However, security also degrades proportional to the number of keys used, as described by Bernstein~\cite{bernsteinblog} and Chatterjee, Menezes, and Sarkar~\cite{DBLP:conf/sacrypt/ChatterjeeMS11,DBLP:journals/iacr/ChatterjeeMS11}. Concretely, if $k$ keys are used, then attacker success probability increases by a factor $k$. Therefore, all success probabilities in this text should be multiplied by $k$, where $k$ is the number of keys used in all TLS connections that may be of interest to the adversary. %Furthermore, generally it is better to stick to using a particular key as long as possible, within reason, rather than to switch keys as frequently as possible.
 
@@ -105,7 +105,7 @@ The quality of the primitives is determined through extensive cryptanalysis, and
 
 For well-designed primitives, the best attacks do not improve significantly when adversaries have access to more plaintext-ciphertext pairs: it matters little if you have twenty or $2^{20}$ plaintext-ciphertext pairs, you will not improve your attack against AES. However, the security of modes of operation \emph{could} start to degrade with extended use, particularly when the security reduction from modes to primitives is not ``tight''.
 
-If we look at \texttt{ChaCha20+Poly1305} for example, then its security proof in~\cite{cryptoeprint:2014:613} establishes a fairly tight reduction from the mode to the underlying primitive, a PRF. This means there is no essential loss of security when going from mode to primitive. 
+If we look at \texttt{ChaCha20+Poly1305} for example, then its security proof in~\cite{DBLP:journals/iacr/Procter14a} establishes a fairly tight reduction from the mode to the underlying primitive, a PRF. This means there is no essential loss of security when going from mode to primitive. 
 However, the same is not true for \texttt{AES-GCM} because of particular characteristics of this mode's construction.
 
 %\kenny{I think we should revise this a bit -- there is a loss in the proof, since the advantage term degrades by $q \times 2^{-103} \times \lceil L/16 \rceil where $L$ is the maximum message size in bytes. This means that there is a degradation, but only for large $q$.}
@@ -131,11 +131,14 @@ The second, INT-CTXT, is an integrity notion which measures the success of an ad
 
 Note that in TLS, we can in fact set $v=1$, since a failed verification query leads to the termination of the TLS connection and the disposal of the connection keys. However the same is not true in DTLS, and many verification attempts would be tolerated in a typical attack scenario. 
 
-Bounds on success probability for IND-CPA security and for INT-CTXT security (for a given $v$) can be \emph{added} to produce bounds on AE security (for a given $v$). 
+Bounds on success probability for IND-CPA security and for INT-CTXT security (for a given $v$) can be \emph{added} to produce bounds on AE security (for a given $v$).
+
+\subsection{Attacks}
+If the limits and assumptions in this text are not respected, then attacks are possible. Repeating a nonce with either \texttt{GCM} or \texttt{ChaCha20+Poly1305} means attackers can determine the XOR of two messages using only the ciphertext, and, in the case of \texttt{GCM}, partial key recovery is possible~\cite{JouxAuthenticationFailures}. Successful forgeries also allow for partial key recovery attacks on \texttt{GCM}~\cite{DBLP:conf/crypto/HandschuhP08}; see Abdelraheem et al.~\cite{DBLP:conf/eurocrypt/AbdelraheemBBT15,DBLP:journals/iacr/AbdelraheemBBT15} for an overview of forgery attacks on \texttt{GCM}. Outputting multiple decryption errors~\cite{DBLP:conf/fse/BoldyrevaDPS13,DBLP:journals/iacr/BoldyrevaDPS13} or decrypting the ciphertext before the integrity check is complete~\cite{DBLP:conf/asiacrypt/AndreevaBLMMY14,DBLP:journals/iacr/AndreevaBLMMY14} could also result in vulnerabilities.
 
 \section{Computing the Bounds}
 
-The analysis by Procter~\cite{cryptoeprint:2014:613} gives a security reduction for \texttt{ChaCha20+Poly1305} which tightly relates confidentiality to security of the underlying PRF, and shows an integrity degradation of $v \cdot 2^{-93}$ where $v$ is the number of verification queries permitted, assuming all messages have the maximum permitted length.
+The analysis by Procter~\cite{DBLP:journals/iacr/Procter14a} gives a security reduction for \texttt{ChaCha20+Poly1305} which tightly relates confidentiality to security of the underlying PRF, and shows an integrity degradation of $v \cdot 2^{-93}$ where $v$ is the number of verification queries permitted, assuming all messages have length $2^{14}$ Bytes.
 
 % The advantage term actually degrades by $q \times 2^{-103} \times \lceil L/16 \rceil where $L$ is the maximum message size in bytes. Here $L$ is $2^{14}$.
 
@@ -145,7 +148,7 @@ RFC 5288 specifies that \texttt{AES-GCM} use a 12-octet nonce, with 4 octets bei
 
 In our further analysis, we assume that all the nonces are unique. Note that this is unlikely to be the case when the number of encryptions exceeds $2^{32}$ if \verb|nonce_explicit| is selected at random for each encryption.
 
-For \texttt{AES-GCM} we use the currently best known bounds provided by Iwata et al.~\cite{GCMLNCS,cryptoeprint:2012:438}. These bounds correct those in the original proof of security for \texttt{AES-GCM} by McGrew and Viega~\cite{DBLP:conf/indocrypt/McGrewV04,DBLP:journals/iacr/McGrewV04}. Note that the security bound improvement proposed by Niwa et al.~\cite{DBLP:conf/fse/NiwaOMI15,DBLP:journals/iacr/NiwaOMI15} does not apply to the way \texttt{AES-GCM} is used in TLS, since it only holds when the construction is used with nonce-length not equal to 96 bits, which is not an option in TLS. 
+For \texttt{AES-GCM} we use the currently best known bounds provided by Iwata et al.~\cite{GCMLNCS,DBLP:journals/iacr/IwataOM12}. These bounds correct those in the original proof of security for \texttt{AES-GCM} by McGrew and Viega~\cite{DBLP:conf/indocrypt/McGrewV04,DBLP:journals/iacr/McGrewV04}. Note that the security bound improvement proposed by Niwa et al.~\cite{DBLP:conf/fse/NiwaOMI15,DBLP:journals/iacr/NiwaOMI15} does not apply to the way \texttt{AES-GCM} is used in TLS, since it only holds when the construction is used with nonce-length not equal to 96 bits, which is not an option in TLS. 
 %Throughout this section we only consider GCM with nonce-length 96 bits.
 
 \begin{table}[H]
@@ -157,7 +160,7 @@ For \texttt{AES-GCM} we use the currently best known bounds provided by Iwata et
     \cmidrule{1-2}
     $n$ & Block size, 128 bits\\
     $\tau$ & Tag size, 128 bits\\
-    $\ell$ & maximum input length in blocks, $2^{10}$ blocks $ = 2^{14}$ Bytes\\
+    $\ell$ & input length in blocks, $2^{10}$ blocks $ = 2^{14}$ Bytes\\
     $\sigma$ & total plaintext length in blocks\\
     $q$ & number of encryption queries\\
     $v$ & number of verification attempts\\
@@ -165,7 +168,7 @@ For \texttt{AES-GCM} we use the currently best known bounds provided by Iwata et
   \end{tabular}
 \end{table}
 
-Starting with INT-CTXT (integrity), the best bound for \texttt{AES-GCM} can be found in equation (22) from Iwata et al.'s extended paper~\cite{cryptoeprint:2012:438}:
+Starting with INT-CTXT (integrity), the best bound for \texttt{AES-GCM} can be found in equation (22) from Iwata et al.'s extended paper~\cite{DBLP:journals/iacr/IwataOM12}:
 \begin{equation}
   \frac{v(\ell+1)}{2^\tau}\cdot\delta_n(\sigma+q+v+1)\,,
 \end{equation}
