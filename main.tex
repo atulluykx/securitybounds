@@ -56,17 +56,25 @@
 \title{Limits on Authenticated Encryption Use in TLS}
 \author{Atul Luykx and Kenneth G. Paterson}
 
+
 \begin{document}
 \maketitle
 
+
+\begin{abstract}
+This technical note presents limits on the security (as a function of the number of plaintext bytes encrypted and the number of forgery attempts made by an adversary) for the main Authenticated Encryption schemes available in TLS 1.2 and the draft of TLS 1.3. These limits are derived from security proofs for the considered schemes available in the literature. Our intention is to provide considered technical input to on-going discussions in the TLS Working Group of the IETF concerning, amongst other things, the necessity of adding a key update feature to the TLS 1.3 specification. 
+\end{abstract}
 
 % Confidence level set to $2^{-60}$
 % There are likely to be over $2^{40}$ tls connections globally?
 % What to set the confidence level to? 
 
 \section{Summary}
+
+\subsection{\texttt{ChaCha20+Poly1305}}
 The AE security of \texttt{ChaCha20+Poly1305} degrades proportionally with the number of forgery attempts, assuming nonces are used properly and the block function underlying ChaCha20 is secure as a pseudorandom function. If only a single forgery attempt is allowed, as is the case for TLS, then the 64-bit TLS sequence number will wrap before any significant security loss is incurred. If multiple forgery attempts are allowed, as is the case for DTLS, then adversaries will have AE success probability bounded by $v\cdot 2^{-93}$, with $v$ being the number of forgery attempts. For example, adversaries making $v = 2^{60}$ forgery attempts will succeed with probability at most $2^{-33}$.
 
+\subsection{ \texttt{AES-GCM} }
 
 Limits on the amount of data that \texttt{AES-GCM} can process without needing a key change can be found in Table~\ref{table:gcm-bounds}. Here we  assume that AES is secure as a pseudorandom permutation and that nonces are used properly; in particular, we assume that the 8 octet \verb|nonce_explicit| part of the \texttt{AES-GCM} nonce is unique for each encryption (for example, it is set to be the TLS sequence number). 
 
