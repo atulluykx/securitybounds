@@ -100,6 +100,8 @@ Limits on the amount of data that \texttt{AES-GCM} can process without needing a
 
 In this table, the attack considered is one in which adversaries attempt to determine which one of two equal length messages was encrypted by \texttt{AES-GCM} (an IND-CPA attack); for the quoted figures, ciphertext integrity will not be breached with probability greater than $1/2^{57}$. Bounds on AE security can then be derived by adding  $1/2^{57}$ to the bounds from Table \ref{table:gcm-bounds}. Section~\ref{sec:explanation} provides further rationale for considering these types of attack, and also explains what the bounds mean, why there is a difference between \texttt{ChaCha20+Poly1305} and \texttt{AES-GCM}, and gives an overview of known vulnerabilities when the limits and assumptions are not respected.
 
+\subsection{Security Degradation for Multiple Keys}
+
 The computations in this text focus on security degradation under a \emph{single} key. However, security also degrades proportional to the number of keys used, as described by Bernstein~\cite{bernsteinblog} and Chatterjee, Menezes, and Sarkar~\cite{DBLP:conf/sacrypt/ChatterjeeMS11,DBLP:journals/iacr/ChatterjeeMS11}. Concretely, if $k$ keys are used, then attacker success probability increases by a factor $k$. Therefore, all success probabilities in this text should be multiplied by $k$, where $k$ is the number of keys used in all TLS connections that may be of interest to the adversary. %Furthermore, generally it is better to stick to using a particular key as long as possible, within reason, rather than to switch keys as frequently as possible.
 
 \section{Explanation}\label{sec:explanation}
@@ -208,6 +210,6 @@ hence if we want to bound attack success probability by $\epsilon$, we get
 Plugging in the numbers, we get the bounds shown in Table~\ref{table:gcm-bounds} for \texttt{AES-GCM}.
 
 \bibliographystyle{plain}
-\bibliography{main.bib}
+\bibliography{main}
 
 \end{document}
