@@ -102,7 +102,12 @@ In this table, the attack considered is one in which adversaries attempt to dete
 
 \subsection{Security Degradation for Multiple Keys}
 
-The computations in this text focus on security degradation under a \emph{single} key. However, security also degrades proportional to the number of keys used, as described by Bernstein~\cite{bernsteinblog} and Chatterjee, Menezes, and Sarkar~\cite{DBLP:conf/sacrypt/ChatterjeeMS11,DBLP:journals/iacr/ChatterjeeMS11}. Concretely, if $k$ keys are used, then attacker success probability increases by a factor $k$. Therefore, all success probabilities in this text should be multiplied by $k$, where $k$ is the number of keys used in all TLS connections that may be of interest to the adversary. %Furthermore, generally it is better to stick to using a particular key as long as possible, within reason, rather than to switch keys as frequently as possible.
+The computations in this text focus on security degradation under a \emph{single} key. However, security also degrades proportional to the number of keys used, as described by Bernstein~\cite{bernsteinblog} and Chatterjee, Menezes, and Sarkar~\cite{DBLP:conf/sacrypt/ChatterjeeMS11,DBLP:journals/iacr/ChatterjeeMS11}. In particular, if $k$ keys are used, then attackers are able to improve brute force key-recovery success by a factor of $k$. TLS 1.3 introduced mitigation against such multi-key attacks by randomizing the nonce input to GCM. See Bellare and Tackmann~\cite{DBLP:conf/crypto/BellareT16} for an analysis of the tweak.
+
+Nevertheless, as discussed by Luykx, Mennink, and Paterson~\cite{DBLP:journals/iacr/LuykxMP17, DBLP:conf/asiacrypt/LuykxMP17}, in the case of GCM, such multi-key attacks only impact the security of the underlying block cipher, AES, and not GCM's security as a mode. Therefore the attack success probabilities computed in the table above hold whether adversaries have access to one instance of GCM or $k$ instances. See the introduction of \cite{DBLP:journals/iacr/LuykxMP17} for further details.
+
+
+
 
 \section{Explanation}\label{sec:explanation}
 
